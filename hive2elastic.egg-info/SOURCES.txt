@@ -1,6 +1,0 @@
-hive2elastic.egg-info/PKG-INFO
-hive2elastic.egg-info/SOURCES.txt
-hive2elastic.egg-info/dependency_links.txt
-hive2elastic.egg-info/entry_points.txt
-hive2elastic.egg-info/requires.txt
-hive2elastic.egg-info/top_level.txt
