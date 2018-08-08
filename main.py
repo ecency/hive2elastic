@@ -1,6 +1,7 @@
 import logging
 import multiprocessing as mp
 import sys
+import time
 
 import configargparse
 import elasticsearch
@@ -19,19 +20,8 @@ index_name = None
 es = None
 
 
-def list_chunk(l, n):
-    return [l[i:i + n] for i in range(0, len(l), n)]
-
-
-def worker(rows):
-    global es, index_name
-
-    index_data = []
-
-    for row in rows:
-        index_data.append(doc_from_row(row, index_name, conf['es_type']))
-
-    helpers.bulk(es, index_data)
+def convert_post(row):
+    return doc_from_row(row, index_name, conf['es_type'])
 
 
 def run():
@@ -74,20 +64,27 @@ def run():
 
     while True:
         logging.info('Min id: {}'.format(min_id))
+
+        start = time.time()
+
         posts = get_source_data(conf['db_url'], conf['bulk_size'], min_id)
 
         if len(posts) == 0:
             logging.info('Indexing completed')
             break
 
-        chunks = list_chunk(posts, conf['max_workers'])
-
         pool = mp.Pool(processes=conf['max_workers'])
-        pool.map_async(worker, chunks).get()
+        index_data = pool.map_async(convert_post, posts).get()
         pool.close()
         pool.join()
 
+        helpers.bulk(es, index_data)
+
         min_id = posts[-1].post_id
+
+        end = time.time()
+
+        logging.info('{} indexed in {}'.format(len(posts), (end - start)))
 
     es.indices.put_alias(index=index_name, name=conf['es_index'])
     es.indices.delete_alias(index=index_name, name='indexing')
