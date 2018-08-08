@@ -1,4 +1,5 @@
 import logging
+import multiprocessing as mp
 import sys
 
 import configargparse
@@ -14,9 +15,28 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger('elasticsearch').setLevel(logging.CRITICAL)
 
 conf = {}
+index_name = None
+es = None
 
 
-def work():
+def list_chunk(l, n):
+    return [l[i:i + n] for i in range(0, len(l), n)]
+
+
+def worker(rows):
+    global es, index_name
+
+    index_data = []
+
+    for row in rows:
+        index_data.append(doc_from_row(row, index_name, conf['es_type']))
+
+    helpers.bulk(es, index_data)
+
+
+def run():
+    global conf, es, index_name
+
     if not check_conn(conf['db_url']):
         logging.error("Could not connect hive db")
         sys.exit(1)
@@ -60,18 +80,14 @@ def work():
             logging.info('Indexing completed')
             break
 
-        index_data = []
+        chunks = list_chunk(posts, conf['max_workers'])
 
-        for post in posts:
-            min_id = post.post_id
+        pool = mp.Pool(processes=conf['max_workers'])
+        pool.map_async(worker, chunks).get()
+        pool.close()
+        pool.join()
 
-            index_data.append(doc_from_row(post, index_name, conf['es_type']))
-
-        try:
-            helpers.bulk(es, index_data)
-        except Exception as ex:
-            logging.error("Could not complete bulk index. {}".format(str(ex)))
-            sys.exit()
+        min_id = posts[-1].post_id
 
     es.indices.put_alias(index=index_name, name=conf['es_index'])
     es.indices.delete_alias(index=index_name, name='indexing')
@@ -86,7 +102,7 @@ def work():
     logging.info('Done')
 
 
-def run():
+def main():
     parser = configargparse.get_arg_parser()
 
     parser.add('--db-url', env_var='DB_URL', required=True, help='hive database connection url')
@@ -95,16 +111,19 @@ def run():
     parser.add('--es-index', env_var='ES_INDEX', help='elasticsearch index name', default='hive_index')
     parser.add('--es-type', env_var='ES_TYPE', help='elasticsearch type name', default='posts')
 
-    parser.add('--bulk-size', env_var='BULK_SIZE', type=int, help='Number of records exported in a single loop',
+    parser.add('--bulk-size', env_var='BULK_SIZE', type=int, help='number of records exported in a single loop',
                default=500)
+
+    parser.add('--max-workers', type=int, env_var='MAX_WORKERS', help='max workers', default=2)
 
     args = parser.parse_args()
 
     global conf
+
     conf = vars(args)
 
-    work()
+    run()
 
 
 if __name__ == "__main__":
-    run()
+    main()
