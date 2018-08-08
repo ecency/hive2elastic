@@ -34,7 +34,6 @@ def make_index_config(type_name):
         'mappings': {
             type_name: {
                 '_all': {'enabled': False},
-                '_source': {'enabled': False},
                 'properties': {
                     'post_id': {
                         'type': 'integer'
