@@ -2,4 +2,4 @@ venv
 .idea
 *.pyc
 .DS_Store
-hive2elastic.egg-info
+*.egg-info
