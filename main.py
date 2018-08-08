@@ -7,9 +7,11 @@ from elasticsearch import helpers
 
 from db_helpers import get_source_data, check_conn
 from es_helpers import make_new_index_name, make_index_config, max_post_id_agg, doc_from_row
-from state import get_state, set_state, delete_state
 
 logging.basicConfig(level=logging.INFO)
+
+# disable elastic search's confusing logging
+logging.getLogger('elasticsearch').setLevel(logging.CRITICAL)
 
 conf = {}
 
@@ -21,45 +23,34 @@ def work():
 
     es = elasticsearch.Elasticsearch(conf['es_url'])
 
-    index_name = make_new_index_name(conf['es_index'])
-    min_id = 0
+    # Look for indexes in progress
+    indices = es.indices.get_alias('indexing*')
 
-    # State checks
-    state = get_state()
-    state_flag = False
+    if len(indices) > 1:
+        raise Exception("There are more than 1 indexes in progress.")
 
-    if state:
-        # Check if index exists
-        try:
-            es.indices.get(state['index'])
-            state_flag = True
-        except elasticsearch.exceptions.NotFoundError:
-            pass
+    if len(indices) == 1:
+        index_name = next(iter(indices))
 
-        # Check last_post_id is still same
-        if state_flag:
-            res = es.search(index=state['index'], body=max_post_id_agg)
-            max_from_index = res['aggregations']['max_post_id']['value'] or 0
+        res = es.search(index=index_name, body=max_post_id_agg)
+        max_from_index = res['aggregations']['max_post_id']['value'] or 0
 
-            if state['last_post_id'] != int(max_from_index):
-                state_flag = False
+        min_id = int(max_from_index)
 
-        if state_flag:
-            index_name = state['index']
-            min_id = state['last_post_id']
-        else:
-            delete_state()
-
-    if state_flag:
-        logging.info("Resuming from state")
+        logging.info('Resuming on index {} from {}'.format(index_name, min_id))
     else:
-        logging.info('Creating new index')
+        index_name = make_new_index_name(conf['es_index'])
+
+        logging.info('Creating new index {}'.format(index_name))
+
         index_config = make_index_config(conf['es_type'])
         es.indices.create(index=index_name, body=index_config)
 
-    logging.info('Starting import')
+        es.indices.put_alias(index=index_name, name='indexing')
 
-    set_state(index_name, min_id)
+        min_id = 0
+
+    logging.info('Starting indexing')
 
     while True:
         logging.info('Min id: {}'.format(min_id))
@@ -82,11 +73,8 @@ def work():
             logging.error("Could not complete bulk index. {}".format(str(ex)))
             sys.exit()
 
-        set_state(index_name, min_id)
-
     es.indices.put_alias(index=index_name, name=conf['es_index'])
-
-    delete_state()
+    es.indices.delete_alias(index=index_name, name='indexing')
 
     logging.info('Deleting old index(es)')
 

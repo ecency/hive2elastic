@@ -2,6 +2,10 @@ from sqlalchemy import create_engine, text
 
 
 def get_source_data(db_url, bulk_size, min_post_id=0):
+
+    if min_post_id >= 500:
+        return []
+
     db_engine = create_engine(db_url)
 
     sql = """SELECT post_id, author, permlink, category, depth, children,
