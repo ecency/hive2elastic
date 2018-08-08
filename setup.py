@@ -21,6 +21,6 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'hive2elastic=main:run',
+            'hive2elastic=main:main',
         ]
     })
