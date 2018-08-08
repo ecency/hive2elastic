@@ -1,0 +1,5 @@
+configargparse
+elasticsearch
+sqlalchemy
+markdown
+psycopg2-binary

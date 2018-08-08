@@ -9,7 +9,7 @@ assert sys.version_info[0] == 3 and sys.version_info[1] >= 5, "hive2elastic requ
 setup(
     name='hive2elastic',
     version='0.0.1',
-    description='',
+    description='hive to elastic exporter',
     long_description=open('README.md').read(),
     packages=find_packages(),
     install_requires=[
@@ -21,6 +21,6 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'hive2elastic=main.run',
+            'hive2elastic=main:run',
         ]
     })
