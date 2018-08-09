@@ -18,6 +18,7 @@ logging.getLogger('elasticsearch').setLevel(logging.CRITICAL)
 conf = {}
 index_name = None
 es = None
+bulk_errors = 0
 
 
 def convert_post(row):
@@ -25,7 +26,7 @@ def convert_post(row):
 
 
 def run():
-    global conf, es, index_name
+    global conf, es, index_name, bulk_errors
 
     if not check_conn(conf['db_url']):
         logging.error("Could not connect hive db")
@@ -78,7 +79,17 @@ def run():
         pool.close()
         pool.join()
 
-        helpers.bulk(es, index_data)
+        try:
+            helpers.bulk(es, index_data)
+            bulk_errors = 0
+        except helpers.BulkIndexError:
+            bulk_errors += 1
+            logging.error("BulkIndexError occurred")
+
+            if bulk_errors >= conf['max_bulk_errors']:
+                sys.exit(1)
+
+            continue
 
         min_id = posts[-1].post_id
 
@@ -112,6 +123,8 @@ def main():
                default=500)
 
     parser.add('--max-workers', type=int, env_var='MAX_WORKERS', help='max workers', default=2)
+
+    parser.add('--max-bulk-errors', type=int, env_var='MAX_BULK_ERRORS', help='', default=5)
 
     args = parser.parse_args()
 
