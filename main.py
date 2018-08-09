@@ -82,12 +82,14 @@ def run():
         try:
             helpers.bulk(es, index_data)
             bulk_errors = 0
-        except helpers.BulkIndexError:
+        except helpers.BulkIndexError as ex:
             bulk_errors += 1
-            logging.error("BulkIndexError occurred")
+            logging.error("BulkIndexError occurred. {}".format(ex))
 
             if bulk_errors >= conf['max_bulk_errors']:
                 sys.exit(1)
+
+            time.sleep(1)
 
             continue
 

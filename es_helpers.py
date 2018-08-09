@@ -154,10 +154,29 @@ def parse_app(app):
     return app
 
 
+def parse_tags(tags):
+    """
+
+    >>> parse_tags('writing')
+    'writing'
+
+    >>> parse_tags(['news', 'steemit', 3, {'5': {}, '3': {}, '1': {}}, {'39': {}, '45': {}, '11': {}}, {}, 'esteem'])
+    ['news', 'steemit', 'esteem']
+
+    >>> parse_tags(['dlive', 'dlive-broadcast', 'game', 'DLIVEGAMING'])
+    ['dlive', 'dlive-broadcast', 'game', 'DLIVEGAMING']
+    """
+
+    if isinstance(tags, str):
+        return tags
+
+    return [x for x in tags if isinstance(x, str)]
+
+
 def doc_from_row(row, index_name, index_type):
     json_obj = json.loads(row.json)
 
-    tags = json_obj['tags'] if 'tags' in json_obj else ''
+    tags = parse_tags(json_obj['tags']) if 'tags' in json_obj else ''
     app = parse_app(json_obj['app']) if 'app' in json_obj else ''
 
     try:
