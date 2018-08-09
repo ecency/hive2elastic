@@ -140,18 +140,63 @@ def make_index_config(type_name):
 
 
 def sanitize_post_body(body):
+    """
+
+    >>> sanitize_post_body(None)
+    ''
+
+    >>> sanitize_post_body(11)
+    ''
+
+    >>> sanitize_post_body('#this is a h1')
+    'this is a h1'
+
+    >>> sanitize_post_body('```lorem ipsum dolor sit amet``` There are many variations of passages')
+    'lorem ipsum dolor sit amet There are many variations of passages'
+    """
+
+    if not isinstance(body, str):
+        return ''
+
     html = markdown(body)
 
-    return re.sub(re.compile('<.*?>'), '', html)
+    return re.sub(re.compile('<.*?>'), '', html).strip()
 
 
 def parse_app(app):
-    if isinstance(app, dict):
-        name = app['name'] if 'name' in app else ''
-        ver = app['version'] if 'version' in app else ''
-        return '{} {}'.format(name, ver).strip()
+    """
 
-    return app
+    >>> parse_app(None)
+    ''
+
+    >>> parse_app({})
+    ''
+
+    >>> parse_app({'name': 'esteem'})
+    'esteem'
+
+    >>> parse_app({'version': 2})
+    ''
+
+    >>> parse_app({'name': 'esteem', 'version': 2})
+    'esteem 2'
+
+    >>> parse_app('esteem 1.1.1')
+    'esteem 1.1.1'
+
+    """
+
+    if app is None:
+        return ''
+
+    if isinstance(app, dict):
+        if 'name' in app:
+            ver = app['version'] if 'version' in app else ''
+            return '{} {}'.format(app['name'], ver).strip()
+        else:
+            return ''
+
+    return str(app)
 
 
 def parse_tags(tags):
@@ -165,12 +210,18 @@ def parse_tags(tags):
 
     >>> parse_tags(['dlive', 'dlive-broadcast', 'game', 'DLIVEGAMING'])
     ['dlive', 'dlive-broadcast', 'game', 'DLIVEGAMING']
+
+    >>> parse_tags(2)
+    ''
     """
 
     if isinstance(tags, str):
         return tags
 
-    return [x for x in tags if isinstance(x, str)]
+    if isinstance(tags, list):
+        return [x for x in tags if isinstance(x, str)]
+
+    return ''
 
 
 def doc_from_row(row, index_name, index_type):
