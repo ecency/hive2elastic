@@ -150,7 +150,11 @@ def doc_from_row(row, index_name, index_type):
 
     tags = json_obj['tags'] if 'tags' in json_obj else ''
     app = json_obj['app'] if 'app' in json_obj else ''
-    sanitized_body = sanitize_post_body(row.body)
+
+    try:
+        sanitized_body = sanitize_post_body(row.body)
+    except RecursionError:
+        sanitized_body = row.body
 
     return {
         '_index': index_name,
