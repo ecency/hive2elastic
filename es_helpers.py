@@ -145,11 +145,20 @@ def sanitize_post_body(body):
     return re.sub(re.compile('<.*?>'), '', html)
 
 
+def parse_app(app):
+    if isinstance(app, dict):
+        name = app['name'] if 'name' in app else ''
+        ver = app['version'] if 'version' in app else ''
+        return '{} {}'.format(name, ver).strip()
+
+    return app
+
+
 def doc_from_row(row, index_name, index_type):
     json_obj = json.loads(row.json)
 
     tags = json_obj['tags'] if 'tags' in json_obj else ''
-    app = json_obj['app'] if 'app' in json_obj else ''
+    app = parse_app(json_obj['app']) if 'app' in json_obj else ''
 
     try:
         sanitized_body = sanitize_post_body(row.body)
