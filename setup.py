@@ -16,8 +16,8 @@ setup(
         'configargparse',
         'elasticsearch',
         'sqlalchemy',
-        'markdown',
-        'psycopg2-binary'
+        'psycopg2-binary',
+        'mistune'
     ],
     entry_points={
         'console_scripts': [

@@ -1,7 +1,10 @@
-from datetime import datetime
-import markdown
-import re
 import json
+import re
+from datetime import datetime
+
+import mistune
+
+markdown = mistune.Markdown()
 
 max_post_id_agg = {
     "aggs": {
@@ -137,7 +140,7 @@ def make_index_config(type_name):
 
 
 def sanitize_post_body(body):
-    html = markdown.markdown(body)
+    html = markdown(body)
 
     return re.sub(re.compile('<.*?>'), '', html)
 
@@ -147,6 +150,7 @@ def doc_from_row(row, index_name, index_type):
 
     tags = json_obj['tags'] if 'tags' in json_obj else ''
     app = json_obj['app'] if 'app' in json_obj else ''
+    sanitized_body = sanitize_post_body(row.body)
 
     return {
         '_index': index_name,
@@ -178,7 +182,7 @@ def doc_from_row(row, index_name, index_type):
         'sc_trend': row.sc_trend,
         'sc_hot': row.sc_hot,
         'body': row.body,
-        'body_sanitized': sanitize_post_body(row.body),
+        'body_sanitized': sanitized_body,
         'votes': row.votes,
         'tags': tags,
         'app': app
