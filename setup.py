@@ -17,7 +17,7 @@ setup(
         'elasticsearch',
         'sqlalchemy',
         'psycopg2-binary',
-        'mistune'
+        'markdown2'
     ],
     entry_points={
         'console_scripts': [

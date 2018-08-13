@@ -1,10 +1,7 @@
 import json
 import re
 from datetime import datetime
-
-import mistune
-
-markdown = mistune.Markdown()
+import markdown2
 
 max_post_id_agg = {
     "aggs": {
@@ -153,14 +150,26 @@ def sanitize_post_body(body):
 
     >>> sanitize_post_body('```lorem ipsum dolor sit amet``` There are many variations of passages')
     'lorem ipsum dolor sit amet There are many variations of passages'
+
+    >>> sanitize_post_body('<center>using [eSteem](https://play.google.com/store/apps/details?id=com.netsolutions.esteem)</center>')
+    'using eSteem'
+
+    >>> s = '![img](https://img.lorem.ip/11.jpg)[Source](https://images.unsplash.com/photo-1518898053858-dcb) Lorem ipsum dolor sit amet ![img2](https://img.lorem.ip/222.jpg) *foo* **bar** baz'
+    >>> sanitize_post_body(s)
+    'Source Lorem ipsum dolor sit amet foo bar baz'
     """
 
     if not isinstance(body, str):
         return ''
 
-    html = markdown(body)
+    html = markdown2.markdown(body)
 
-    return re.sub(re.compile('<.*?>'), '', html).strip()
+    sanitized = re.sub(re.compile('<.*?>'), '', html).strip()
+
+    while '  ' in sanitized:
+        sanitized = sanitized.replace('  ', ' ')
+
+    return sanitized
 
 
 def parse_app(app):
@@ -263,7 +272,6 @@ def doc_from_row(row, index_name, index_type):
         'is_grayed': row.is_grayed,
         'rshares': row.rshares,
         'sc_trend': row.sc_trend,
-        'sc_hot': row.sc_hot,
         'body': row.body,
         'body_sanitized': sanitized_body,
         'votes': row.votes,
