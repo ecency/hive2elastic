@@ -6,11 +6,12 @@ import time
 import configargparse
 import elasticsearch
 from elasticsearch import helpers
+from .es_helpers import make_new_index_name, make_index_config, max_post_id_agg, doc_from_row
 
-from db_helpers import get_source_data, check_conn
-from es_helpers import make_new_index_name, make_index_config, max_post_id_agg, doc_from_row
+from post.db_helpers import get_source_data, check_conn
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('hive2elastic')
 
 # disable elastic search's confusing logging
 logging.getLogger('elasticsearch').setLevel(logging.CRITICAL)
@@ -48,11 +49,11 @@ def run():
 
         min_id = int(max_from_index)
 
-        logging.info('Resuming on index {} from {}'.format(index_name, min_id))
+        logger.info('Resuming on index {} from {}'.format(index_name, min_id))
     else:
         index_name = make_new_index_name(conf['es_index'])
 
-        logging.info('Creating new index {}'.format(index_name))
+        logger.info('Creating new index {}'.format(index_name))
 
         index_config = make_index_config(conf['es_type'])
         es.indices.create(index=index_name, body=index_config)
@@ -61,17 +62,17 @@ def run():
 
         min_id = 0
 
-    logging.info('Starting indexing')
+    logger.info('Starting indexing')
 
     while True:
-        logging.info('Min id: {}'.format(min_id))
+        logger.info('Min id: {}'.format(min_id))
 
         start = time.time()
 
         posts = get_source_data(conf['db_url'], conf['bulk_size'], min_id)
 
         if len(posts) == 0:
-            logging.info('Indexing completed')
+            logger.info('Indexing completed')
             break
 
         pool = mp.Pool(processes=conf['max_workers'])
@@ -97,19 +98,19 @@ def run():
 
         end = time.time()
 
-        logging.info('{} indexed in {}'.format(len(posts), (end - start)))
+        logger.info('{} indexed in {}'.format(len(posts), (end - start)))
 
     es.indices.put_alias(index=index_name, name=conf['es_index'])
     es.indices.delete_alias(index=index_name, name='indexing')
 
-    logging.info('Deleting old index(es)')
+    logger.info('Deleting old index(es)')
 
     index_pattern = '{}*'.format(conf['es_index'])
     for index in es.indices.get(index_pattern):
         if index != index_name:
             es.indices.delete(index)
 
-    logging.info('Done')
+    logger.info('Done')
 
 
 def main():

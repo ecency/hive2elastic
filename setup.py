@@ -21,6 +21,6 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'hive2elastic=main:main',
+            'hive2elastic_post=post.indexer:main',
         ]
     })
