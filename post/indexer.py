@@ -30,7 +30,7 @@ def run():
     global conf, es, index_name, bulk_errors
 
     if not check_conn(conf['db_url']):
-        logging.error("Could not connect hive db")
+        logger.error("Could not connect hive db")
         sys.exit(1)
 
     es = elasticsearch.Elasticsearch(conf['es_url'])
@@ -85,7 +85,7 @@ def run():
             bulk_errors = 0
         except helpers.BulkIndexError as ex:
             bulk_errors += 1
-            logging.error("BulkIndexError occurred. {}".format(ex))
+            logger.error("BulkIndexError occurred. {}".format(ex))
 
             if bulk_errors >= conf['max_bulk_errors']:
                 sys.exit(1)
