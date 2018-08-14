@@ -2,6 +2,7 @@ import json
 import re
 from datetime import datetime
 import markdown2
+import timeout_decorator
 
 max_post_id_agg = {
     "aggs": {
@@ -133,6 +134,7 @@ def make_index_config(type_name):
     }
 
 
+@timeout_decorator.timeout(5)
 def sanitize_post_body(body):
     """
 
@@ -239,6 +241,8 @@ def doc_from_row(row, index_name, index_type):
     try:
         sanitized_body = sanitize_post_body(row.body)
     except RecursionError:
+        sanitized_body = row.body
+    except timeout_decorator.TimeoutError:
         sanitized_body = row.body
 
     return {

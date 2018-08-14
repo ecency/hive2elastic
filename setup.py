@@ -17,7 +17,8 @@ setup(
         'elasticsearch',
         'sqlalchemy',
         'psycopg2-binary',
-        'markdown2'
+        'markdown2',
+        'timeout_decorator'
     ],
     entry_points={
         'console_scripts': [
