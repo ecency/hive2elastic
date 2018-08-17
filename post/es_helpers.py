@@ -116,6 +116,9 @@ def make_index_config(type_name):
                         'type': 'float'
                     },
                     'body': {
+                        'type': 'text'
+                    },
+                    'body_sanitized': {
                         'type': 'text',
                         'analyzer': 'index_analyzer'
                     },
@@ -273,7 +276,8 @@ def doc_from_row(row, index_name, index_type):
         'is_grayed': row.is_grayed,
         'rshares': row.rshares,
         'sc_trend': row.sc_trend,
-        'body': sanitized_body,
+        'body': row.body,
+        'body_sanitized': sanitized_body,
         'votes': row.votes,
         'tags': tags,
         'app': app
