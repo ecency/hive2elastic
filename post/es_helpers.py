@@ -27,7 +27,16 @@ def make_index_config(type_name):
                 'analyzer': {
                     'index_analyzer': {
                         'tokenizer': 'whitespace',
-                        'filter': ['standard', 'lowercase', 'asciifolding']
+                        'filter': ['standard', 'lowercase', 'asciifolding', 'my_word_delimiter']
+                    }
+                },
+                'filter': {
+                    'my_word_delimiter': {
+                        'type': 'word_delimiter',
+                        'split_on_numerics': 'false',
+                        'generate_number_parts': 'false',
+                        'preserve_original': 'true',
+                        'type_table': ['@ => ALPHANUM']
                     }
                 }
             }
