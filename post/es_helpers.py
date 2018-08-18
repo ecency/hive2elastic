@@ -36,7 +36,7 @@ def make_index_config(type_name):
                         'split_on_numerics': 'false',
                         'generate_number_parts': 'false',
                         'preserve_original': 'true',
-                        'type_table': ['@ => ALPHANUM']
+                        'type_table': ['# => ALPHANUM', '@ => ALPHANUM']
                     }
                 }
             }
@@ -79,8 +79,7 @@ def make_index_config(type_name):
                         'type': 'integer'
                     },
                     'title': {
-                        'type': 'text',
-                        'analyzer': 'index_analyzer'
+                        'type': 'text'
                     },
                     'img_url': {
                         'type': 'text',
@@ -129,11 +128,11 @@ def make_index_config(type_name):
                         'type': 'float'
                     },
                     'body': {
-                        'type': 'text'
+                        'type': 'text',
+                        'index': 'false'
                     },
                     'body_sanitized': {
-                        'type': 'text',
-                        'analyzer': 'index_analyzer'
+                        'type': 'text'
                     },
                     'votes': {
                         'type': 'text',
@@ -146,6 +145,10 @@ def make_index_config(type_name):
                     'app': {
                         'type': 'text',
                         'analyzer': 'whitespace'
+                    },
+                    'searchable': {
+                        'type': 'text',
+                        'analyzer': 'index_analyzer'
                     }
                 }
             }
@@ -296,5 +299,6 @@ def doc_from_row(row, index_name, index_type):
         'body_sanitized': sanitized_body,
         'votes': row.votes,
         'tags': tags,
-        'app': app
+        'app': app,
+        'searchable': '{} {}'.format(row.title, sanitized_body)
     }
