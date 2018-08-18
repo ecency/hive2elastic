@@ -40,13 +40,16 @@ def make_index_config(type_name):
                         'type': 'integer'
                     },
                     'author': {
-                        'type': 'text'
+                        'type': 'text',
+                        'analyzer': 'whitespace'
                     },
                     'permlink': {
-                        'type': 'text'
+                        'type': 'text',
+                        'index': 'false'
                     },
                     'category': {
-                        'type': 'text'
+                        'type': 'text',
+                        'index': 'false'
                     },
                     'depth': {
                         'type': 'short'
@@ -71,7 +74,8 @@ def make_index_config(type_name):
                         'analyzer': 'index_analyzer'
                     },
                     'img_url': {
-                        'type': 'text'
+                        'type': 'text',
+                        'index': 'false'
                     },
                     'payout': {
                         'type': 'float'
@@ -123,13 +127,16 @@ def make_index_config(type_name):
                         'analyzer': 'index_analyzer'
                     },
                     'votes': {
-                        'type': 'text'
+                        'type': 'text',
+                        'index': 'false'
                     },
                     'tags': {
-                        'type': 'text'
+                        'type': 'text',
+                        'analyzer': 'whitespace'
                     },
                     'app': {
-                        'type': 'text'
+                        'type': 'text',
+                        'analyzer': 'whitespace'
                     }
                 }
             }
