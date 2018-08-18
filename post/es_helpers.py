@@ -300,5 +300,5 @@ def doc_from_row(row, index_name, index_type):
         'votes': row.votes,
         'tags': tags,
         'app': app,
-        'searchable': '{} {}'.format(row.title, sanitized_body)
+        'searchable': '{} | {}'.format(row.title, sanitized_body)
     }
