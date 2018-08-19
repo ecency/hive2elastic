@@ -125,7 +125,7 @@ def run_cont():
     while True:
         try:
             indices = es.indices.get(conf['es_index'])
-        except elasticsearch.exceptions.NotFoundError:
+        except elasticsearch.NotFoundError:
             logger.error("Index not found: {}".format(index_name))
             time.sleep(5)
             continue
@@ -158,7 +158,7 @@ def run_cont():
 
         try:
             helpers.bulk(es, index_data)
-        except elasticsearch.exceptions.ElasticsearchException as ex:
+        except elasticsearch.ElasticsearchException as ex:
             logger.error("BulkIndexError occurred. {}".format(ex))
             time.sleep(5)
             continue
