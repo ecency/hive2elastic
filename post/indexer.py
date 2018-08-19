@@ -122,19 +122,27 @@ def run_cont():
 
     es = elasticsearch.Elasticsearch(conf['es_url'])
 
-    index_name = conf['es_index']
-
     while True:
         try:
-            es.indices.get(index_name)
+            indices = es.indices.get(conf['es_index'])
         except elasticsearch.exceptions.NotFoundError:
             logger.error("Index not found: {}".format(index_name))
             time.sleep(5)
             continue
 
-        res = es.search(index=index_name, body=max_post_id_agg)
-        max_from_index = res['aggregations']['max_post_id']['value'] or 0
+        # get real index name from alias
+        index_name = next(iter(indices))
 
+        logger.info('Index: {}'.format(index_name))
+
+        try:
+            res = es.search(index=index_name, body=max_post_id_agg)
+        except elasticsearch.NotFoundError:
+            # index removed.
+            time.sleep(5)
+            continue
+
+        max_from_index = res['aggregations']['max_post_id']['value'] or 0
         min_id = int(max_from_index)
 
         logger.info('Min id: {}'.format(min_id))
@@ -150,7 +158,7 @@ def run_cont():
 
         try:
             helpers.bulk(es, index_data)
-        except helpers.BulkIndexError as ex:
+        except elasticsearch.exceptions.ElasticsearchException as ex:
             logger.error("BulkIndexError occurred. {}".format(ex))
             time.sleep(5)
             continue
@@ -165,7 +173,7 @@ def run_cont():
 def main():
     parser = configargparse.get_arg_parser()
 
-    parser.add('--mode', default='new')
+    parser.add('--mode', env_var='INDEX_MODE', default='new')
 
     parser.add('--db-url', env_var='DB_URL', required=True, help='hive database connection url')
 
