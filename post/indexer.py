@@ -113,8 +113,64 @@ def run():
     logger.info('Done')
 
 
+def run_cont():
+    global conf, es, index_name, bulk_errors
+
+    if not check_conn(conf['db_url']):
+        logger.error("Could not connect hive db")
+        sys.exit(1)
+
+    es = elasticsearch.Elasticsearch(conf['es_url'])
+
+    index_name = conf['es_index']
+
+    while True:
+
+        try:
+            es.indices.get(index_name)
+        except elasticsearch.exceptions.NotFoundError:
+            logger.error("Index not found: {}".format(index_name))
+
+        res = es.search(index=index_name, body=max_post_id_agg)
+        max_from_index = res['aggregations']['max_post_id']['value'] or 0
+
+        min_id = int(max_from_index)
+
+        logger.info('Min id: {}'.format(min_id))
+
+        start = time.time()
+
+        posts = get_source_data(conf['db_url'], conf['bulk_size'], min_id)
+
+        pool = mp.Pool(processes=conf['max_workers'])
+        index_data = pool.map_async(convert_post, posts).get()
+        pool.close()
+        pool.join()
+
+        try:
+            helpers.bulk(es, index_data)
+            bulk_errors = 0
+        except helpers.BulkIndexError as ex:
+            bulk_errors += 1
+            logger.error("BulkIndexError occurred. {}".format(ex))
+
+            if bulk_errors >= conf['max_bulk_errors']:
+                sys.exit(1)
+
+            time.sleep(1)
+            continue
+
+        end = time.time()
+
+        logger.info('{} indexed in {}'.format(len(posts), (end - start)))
+
+        time.sleep(5)
+
+
 def main():
     parser = configargparse.get_arg_parser()
+
+    parser.add('--mode', default='new')
 
     parser.add('--db-url', env_var='DB_URL', required=True, help='hive database connection url')
 
@@ -135,7 +191,13 @@ def main():
 
     conf = vars(args)
 
-    run()
+    mode = conf.get('mode')
+
+    if mode == 'new':
+        run()
+
+    if mode == 'continue':
+        run_cont()
 
 
 if __name__ == "__main__":
