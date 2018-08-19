@@ -151,6 +151,11 @@ def run_cont():
 
         posts = get_source_data(conf['db_url'], conf['bulk_size'], min_id)
 
+        # Nothing new. Wait some.
+        if len(posts) == 0:
+            time.sleep(5)
+            continue
+
         pool = mp.Pool(processes=conf['max_workers'])
         index_data = pool.map_async(convert_post, posts).get()
         pool.close()
