@@ -114,7 +114,7 @@ def run():
 
 
 def run_cont():
-    global conf, es, index_name, bulk_errors
+    global conf, es, index_name
 
     if not check_conn(conf['db_url']):
         logger.error("Could not connect hive db")
@@ -125,11 +125,12 @@ def run_cont():
     index_name = conf['es_index']
 
     while True:
-
         try:
             es.indices.get(index_name)
         except elasticsearch.exceptions.NotFoundError:
             logger.error("Index not found: {}".format(index_name))
+            time.sleep(5)
+            continue
 
         res = es.search(index=index_name, body=max_post_id_agg)
         max_from_index = res['aggregations']['max_post_id']['value'] or 0
@@ -149,15 +150,9 @@ def run_cont():
 
         try:
             helpers.bulk(es, index_data)
-            bulk_errors = 0
         except helpers.BulkIndexError as ex:
-            bulk_errors += 1
             logger.error("BulkIndexError occurred. {}".format(ex))
-
-            if bulk_errors >= conf['max_bulk_errors']:
-                sys.exit(1)
-
-            time.sleep(1)
+            time.sleep(5)
             continue
 
         end = time.time()
