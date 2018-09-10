@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 
 def get_source_data(db_url, bulk_size, min_post_id=0):
@@ -18,11 +19,16 @@ def get_source_data(db_url, bulk_size, min_post_id=0):
     return posts
 
 
-def check_conn(db_url):
+def delete_source_data():
+    pass
+
+
+def check_db(db_url):
     try:
         db_engine = create_engine(db_url)
-        db_engine.execute("SELECT 1")
+        db_engine.execute("SELECT post_id FROM __h2e_posts LIMIT 1")
         db_engine.dispose()
-        return True
-    except Exception:
-        return False
+    except OperationalError:
+        raise Exception("Could not connected: {}".format(db_url))
+    except ProgrammingError:
+        raise Exception("__h2e_posts table not exists in database")

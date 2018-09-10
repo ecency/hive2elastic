@@ -2,13 +2,22 @@ import logging
 import multiprocessing as mp
 import sys
 import time
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 import configargparse
 import elasticsearch
 from elasticsearch import helpers
 from .es_helpers import make_new_index_name, make_index_config, max_post_id_agg, doc_from_row
 
-from post.db_helpers import get_source_data, check_conn
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+
+from post.db_helpers import get_source_data, check_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('hive2elastic')
@@ -29,50 +38,47 @@ def convert_post(row):
 def run():
     global conf, es, index_name, bulk_errors
 
-    if not check_conn(conf['db_url']):
-        logger.error("Could not connect hive db")
-        sys.exit(1)
+    try:
+        db_engine = create_engine(conf['db_url'])
+        db_engine.execute("SELECT post_id FROM __h2e_posts LIMIT 1")
+    except OperationalError:
+        raise Exception("Could not connected: {}".format(conf['db_url']))
+    except ProgrammingError:
+        raise Exception("__h2e_posts table not exists in database")
 
     es = elasticsearch.Elasticsearch(conf['es_url'])
 
-    # Look for indexes in progress
-    indices = es.indices.get_alias('indexing*')
+    if not es.ping():
+        raise Exception("Elasticsearch server not reachable")
 
-    if len(indices) > 1:
-        raise Exception("There are more than 1 indexes in progress.")
+    index_name = conf['es_index']
+    index_type = conf['es_type']
 
-    if len(indices) == 1:
-        index_name = next(iter(indices))
-
-        res = es.search(index=index_name, body=max_post_id_agg)
-        max_from_index = res['aggregations']['max_post_id']['value'] or 0
-
-        min_id = int(max_from_index)
-
-        logger.info('Resuming on index {} from {}'.format(index_name, min_id))
-    else:
-        index_name = make_new_index_name(conf['es_index'])
-
+    try:
+        es.indices.get(index_name)
+    except elasticsearch.NotFoundError:
         logger.info('Creating new index {}'.format(index_name))
-
-        index_config = make_index_config(conf['es_type'])
+        index_config = make_index_config(index_type)
         es.indices.create(index=index_name, body=index_config)
-
-        es.indices.put_alias(index=index_name, name='indexing')
-
-        min_id = 0
 
     logger.info('Starting indexing')
 
     while True:
-        logger.info('Min id: {}'.format(min_id))
+        sql = '''SELECT t2.post_id, t2.author, t2.permlink, t2.category, t2.depth, t2.children, t2.author_rep,
+                 t2.flag_weight, t2.total_votes, t2.up_votes, t2.title, t2.img_url, t2.payout, t2.promoted,
+                 t2.created_at, t2.payout_at, t2.updated_at, t2.is_paidout, t2.is_nsfw, t2.is_declined,
+                 t2.is_full_power, t2.is_hidden, t2.is_grayed, t2.rshares, t2.sc_hot, t2.sc_trend, t2.sc_hot,
+                 t2.body, t2.votes,  t2.json
+                 FROM __h2e_posts AS t1 LEFT JOIN hive_posts_cache AS t2 ON t1.post_id = t2.post_id
+                 ORDER BY t1.post_id ASC LIMIT :limit '''
+
+        posts = db_engine.execute(text(sql), limit=conf['bulk_size']).fetchall()
+        db_engine.dispose()
 
         start = time.time()
 
-        posts = get_source_data(conf['db_url'], conf['bulk_size'], min_id)
-
         if len(posts) == 0:
-            logger.info('Indexing completed')
+            time.sleep(0.5)
             break
 
         pool = mp.Pool(processes=conf['max_workers'])
@@ -91,106 +97,28 @@ def run():
                 sys.exit(1)
 
             time.sleep(1)
-
-            continue
-
-        min_id = posts[-1].post_id
-
-        end = time.time()
-
-        logger.info('{} indexed in {}'.format(len(posts), (end - start)))
-
-    es.indices.put_alias(index=index_name, name=conf['es_index'])
-    es.indices.delete_alias(index=index_name, name='indexing')
-
-    logger.info('Deleting old index(es)')
-
-    index_pattern = '{}*'.format(conf['es_index'])
-    for index in es.indices.get(index_pattern):
-        if index != index_name:
-            es.indices.delete(index)
-
-    logger.info('Done')
-
-
-def run_cont():
-    global conf, es, index_name
-
-    if not check_conn(conf['db_url']):
-        logger.error("Could not connect hive db")
-        sys.exit(1)
-
-    es = elasticsearch.Elasticsearch(conf['es_url'])
-
-    while True:
-        try:
-            indices = es.indices.get(conf['es_index'])
-        except elasticsearch.NotFoundError:
-            logger.error("Index not found: {}".format(index_name))
-            time.sleep(5)
-            continue
-
-        # get real index name from alias
-        index_name = next(iter(indices))
-
-        logger.info('Index: {}'.format(index_name))
-
-        try:
-            res = es.search(index=index_name, body=max_post_id_agg)
-        except elasticsearch.NotFoundError:
-            # index removed.
-            time.sleep(5)
-            continue
-
-        max_from_index = res['aggregations']['max_post_id']['value'] or 0
-        min_id = int(max_from_index)
-
-        logger.info('Min id: {}'.format(min_id))
-
-        start = time.time()
-
-        posts = get_source_data(conf['db_url'], conf['bulk_size'], min_id)
-
-        # Nothing new. Wait some.
-        if len(posts) == 0:
-            time.sleep(5)
-            continue
-
-        pool = mp.Pool(processes=conf['max_workers'])
-        index_data = pool.map_async(convert_post, posts).get()
-        pool.close()
-        pool.join()
-
-        try:
-            helpers.bulk(es, index_data)
-        except elasticsearch.ElasticsearchException as ex:
-            logger.error("BulkIndexError occurred. {}".format(ex))
-            time.sleep(5)
             continue
 
         end = time.time()
-
         logger.info('{} indexed in {}'.format(len(posts), (end - start)))
 
-        time.sleep(5)
+        post_ids = [x.post_id for x in posts]
+        chunked_id_list = list(chunks(post_ids, 100))
+
+        for chunk in chunked_id_list:
+            sql = "DELETE FROM __h2e_posts WHERE post_id IN :ids"
+            db_engine.execute(text(sql), ids=tuple(chunk))
 
 
 def main():
     parser = configargparse.get_arg_parser()
 
-    parser.add('--mode', env_var='INDEX_MODE', default='new')
-
     parser.add('--db-url', env_var='DB_URL', required=True, help='hive database connection url')
-
     parser.add('--es-url', env_var='ES_URL', required=True, help='elasticsearch connection url')
-    parser.add('--es-index', env_var='ES_INDEX', help='elasticsearch index name', default='hive_index')
+    parser.add('--es-index', env_var='ES_INDEX', help='elasticsearch index name', default='hive_posts')
     parser.add('--es-type', env_var='ES_TYPE', help='elasticsearch type name', default='posts')
-
-    parser.add('--bulk-size', env_var='BULK_SIZE', type=int, help='number of records exported in a single loop',
-               default=500)
-
+    parser.add('--bulk-size', env_var='BULK_SIZE', type=int, help='number of records in a single loop', default=500)
     parser.add('--max-workers', type=int, env_var='MAX_WORKERS', help='max workers', default=2)
-
     parser.add('--max-bulk-errors', type=int, env_var='MAX_BULK_ERRORS', help='', default=5)
 
     args = parser.parse_args()
@@ -199,13 +127,7 @@ def main():
 
     conf = vars(args)
 
-    mode = conf.get('mode')
-
-    if mode == 'new':
-        run()
-
-    if mode == 'continue':
-        run_cont()
+    run()
 
 
 if __name__ == "__main__":
