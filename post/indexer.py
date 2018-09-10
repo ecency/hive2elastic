@@ -2,13 +2,14 @@ import logging
 import multiprocessing as mp
 import sys
 import time
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import OperationalError, ProgrammingError
 
 import configargparse
 import elasticsearch
 from elasticsearch import helpers
-from .es_helpers import make_new_index_name, make_index_config, max_post_id_agg, doc_from_row
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError, ProgrammingError
+
+from .es_helpers import make_index_config, doc_from_row
 
 
 def chunks(l, n):
@@ -16,8 +17,6 @@ def chunks(l, n):
     for i in range(0, len(l), n):
         yield l[i:i + n]
 
-
-from post.db_helpers import get_source_data, check_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('hive2elastic')

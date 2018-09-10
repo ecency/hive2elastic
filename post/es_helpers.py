@@ -1,23 +1,7 @@
 import json
 import re
-from datetime import datetime
 import markdown2
 import timeout_decorator
-
-max_post_id_agg = {
-    "aggs": {
-        "max_post_id": {
-            "max": {
-                "field": "post_id"
-            }
-        }
-    },
-    "size": 0
-}
-
-
-def make_new_index_name(base_index_name):
-    return '{}-{}'.format(base_index_name, datetime.utcnow().strftime('%Y-%m-%dt%H:%M:%S'))
 
 
 def make_index_config(type_name):
