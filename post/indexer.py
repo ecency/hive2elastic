@@ -92,15 +92,15 @@ def run():
             time.sleep(1)
             continue
 
-        end = time.time()
-        logger.info('{} indexed in {}'.format(len(posts), (end - start)))
-
         post_ids = [x.post_id for x in posts]
-        chunked_id_list = list(chunks(post_ids, 100))
+        chunked_id_list = list(chunks(post_ids, 200))
 
         for chunk in chunked_id_list:
             sql = "DELETE FROM __h2e_posts WHERE post_id IN :ids"
             db_engine.execute(text(sql), ids=tuple(chunk))
+
+        end = time.time()
+        logger.info('{} indexed in {}'.format(len(posts), (end - start)))
 
 
 def main():

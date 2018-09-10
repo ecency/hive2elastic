@@ -20,6 +20,10 @@ CREATE TABLE __h2e_posts
 ```
 
 ```
+INSERT INTO __h2e_posts (post_id) SELECT post_id FROM hive_posts_cache;
+```
+
+```
 CREATE OR REPLACE FUNCTION __fn_h2e_posts()
   RETURNS TRIGGER AS
 $func$
