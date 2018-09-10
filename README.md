@@ -1,6 +1,8 @@
+#hive2elastic
 
+## Installation
 
-
+Run `pip3 install -e .` to install.
 
 **Before start, there some additions to implement on hive database. follow steps below:**
 
