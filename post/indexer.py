@@ -57,18 +57,18 @@ def run():
     logger.info('Starting indexing')
 
     while True:
-        sql = '''SELECT t2.post_id, t2.author, t2.permlink, t2.category, t2.depth, t2.children, t2.author_rep,
-                 t2.flag_weight, t2.total_votes, t2.up_votes, t2.title, t2.img_url, t2.payout, t2.promoted,
-                 t2.created_at, t2.payout_at, t2.updated_at, t2.is_paidout, t2.is_nsfw, t2.is_declined,
-                 t2.is_full_power, t2.is_hidden, t2.is_grayed, t2.rshares, t2.sc_hot, t2.sc_trend, t2.sc_hot,
-                 t2.body, t2.votes,  t2.json
-                 FROM __h2e_posts AS t1 LEFT JOIN hive_posts_cache AS t2 ON t1.post_id = t2.post_id
-                 ORDER BY t1.post_id ASC LIMIT :limit '''
+        start = time.time()
+
+        sql = '''SELECT post_id, author, permlink, category, depth, children, author_rep,
+                 flag_weight, total_votes, up_votes, title, img_url, payout, promoted,
+                 created_at, payout_at, updated_at, is_paidout, is_nsfw, is_declined,
+                 is_full_power, is_hidden, is_grayed, rshares, sc_hot, sc_trend, sc_hot,
+                 body, votes,  json FROM hive_posts_cache 
+                 WHERE post_id IN (SELECT post_id FROM __h2e_posts ORDER BY post_id ASC LIMIT :limit)
+                '''
 
         posts = db_engine.execute(text(sql), limit=conf['bulk_size']).fetchall()
         db_engine.dispose()
-
-        start = time.time()
 
         if len(posts) == 0:
             time.sleep(0.5)
