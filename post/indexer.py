@@ -10,13 +10,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from .es_helpers import make_index_config, doc_from_row
-
-
-def chunks(l, n):
-    """Yield successive n-sized chunks from l."""
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
-
+from .util import chunks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('hive2elastic')
