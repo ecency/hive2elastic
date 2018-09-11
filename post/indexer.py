@@ -72,7 +72,7 @@ def run():
 
         if len(posts) == 0:
             time.sleep(0.5)
-            break
+            continue
 
         pool = mp.Pool(processes=conf['max_workers'])
         index_data = pool.map_async(convert_post, posts).get()
