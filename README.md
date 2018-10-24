@@ -63,11 +63,11 @@ You can configure hive2elastic by these arguments/environment variables:
 |	Argument	|	Environment Variable	|	Description | Default|
 |	--------	|	--------	|	--------	|  --------	|  
 |	--db-url	|	DB_URL	|	Connection string for hive database	| -- | 
-|	--es-url	|	ES_URL	|	Elasticsearch server url	| -- | 
-|	--es-index	|	ES_INDEX	|	 index name on elasticsearch	| hive_posts | 
-|	--es-type	|	ES_TYPE	|	 type name on elasticsearch | hive_posts | 
-|	--bulk-size	|	BULK_SIZE	|	 number of records indexed in a single loop | 500 | 
-|	--max-workers	|	MAX_WORKERS	|	 max workers for converting process | 2 | 
+|	--es-url	|	ES_URL	|	Elasticsearch server address	| -- | 
+|	--es-index	|	ES_INDEX	|	 Index name on elasticsearch	| hive_posts | 
+|	--es-type	|	ES_TYPE	|	 Type name on elasticsearch index | hive_posts | 
+|	--bulk-size	|	BULK_SIZE	|	 Number of documents to index in a single loop | 500 | 
+|	--max-workers	|	MAX_WORKERS	|  Max workers for document preparation process | 2 | 
 
 
 ## Example configuration and running
