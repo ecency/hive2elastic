@@ -1,6 +1,6 @@
 # hive2elastic
 
-hive2elastic synchronises [hive](https://github.com/steemit/hivemind)'s hive_posts_cache table to elasticsearch and keeps it updated.
+hive2elastic synchronises [hive](https://github.com/steemit/hivemind)'s hive_posts_cache table to a elasticsearch index and keeps it updated.
 
 
 ## Before start
@@ -49,11 +49,15 @@ FOR EACH ROW EXECUTE PROCEDURE __fn_h2e_posts();
 
 ## Installation
 
-Run `pip3 install -e .` to install.
+```
+$ git clone https://github.com/esteemapp/hive2elastic
+$ cd hive2elastic
+$ pip3 install -e .
+```
 
 ## Configuration
 
-You can configure hive2elastic by these environment variables:
+You can configure hive2elastic by these arguments/environment variables:
 
 
 |	Argument	|	Environment Variable	|	Description | Default|
