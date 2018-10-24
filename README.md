@@ -1,16 +1,17 @@
-#hive2elastic
+# hive2elastic
 
-## Installation
+hive2elastic synchronises [hive](https://github.com/steemit/hivemind)'s hive_posts_cache table to elasticsearch and keeps it updated.
 
-Run `pip3 install -e .` to install.
 
-**Before start, there some additions to implement on hive database. follow steps below:**
+## Before start
 
-1- stop hive
+Some additional database objects have to be created on hive's database.
 
-make sure hive processes stopped
+**Follow steps below:**
 
-2- Create db objects on hive database
+1- Stop hive. Make sure all hive processes stopped.
+
+2- Create database objects on hive's database.
 
 ```
 CREATE TABLE __h2e_posts
@@ -42,6 +43,36 @@ AFTER INSERT OR UPDATE ON hive_posts_cache
 FOR EACH ROW EXECUTE PROCEDURE __fn_h2e_posts();
 ```
 
-**make sure you database user has delete permission on __h2e_posts table**
+3- Start hive
 
-3- start hive
+**Make sure database credentials that you use has delete permission on __h2e_posts table**
+
+## Installation
+
+Run `pip3 install -e .` to install.
+
+## Configuration
+
+You can configure hive2elastic by these environment variables:
+
+
+|	Argument	|	Environment Variable	|	Description | Default|
+|	--------	|	--------	|	--------	|  --------	|  
+|	--db-url	|	DB_URL	|	Connection string for hive database	| -- | 
+|	--es-url	|	ES_URL	|	Elasticsearch server url	| -- | 
+|	--es-index	|	ES_INDEX	|	 index name on elasticsearch	| hive_posts | 
+|	--es-type	|	ES_TYPE	|	 type name on elasticsearch | hive_posts | 
+|	--bulk-size	|	BULK_SIZE	|	 number of records indexed in a single loop | 500 | 
+|	--max-workers	|	MAX_WORKERS	|	 max workers for converting process | 2 | 
+
+
+## Example configuration and running
+
+```
+$ export DB_URL=postgresql://username:passwd@localhost:5432/hive 
+$ export ES_URL=http://localhost:9200/
+$ export BULK_SIZE=2000                 
+$ export MAX_WORKERS=4
+
+$ hive2elastic_post
+```
