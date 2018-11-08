@@ -45,7 +45,12 @@ FOR EACH ROW EXECUTE PROCEDURE __fn_h2e_posts();
 
 3- Start hive
 
-**Make sure database credentials that you use has delete permission on __h2e_posts table**
+*Make sure database credentials that you use has delete permission on __h2e_posts table*
+
+**Elasticsearch** 
+
+You can find detailed installation instructions [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/install-elasticsearch.html)
+
 
 ## Installation
 
