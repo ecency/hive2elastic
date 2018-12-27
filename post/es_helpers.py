@@ -239,7 +239,10 @@ def parse_tags(tags):
 
 
 def doc_from_row(row, index_name, index_type):
-    json_obj = json.loads(row.json)
+    try:
+        json_obj = json.loads(row.json)
+    except TypeError:
+        json_obj = {}
 
     tags = parse_tags(json_obj['tags']) if 'tags' in json_obj else ''
     app = parse_app(json_obj['app']) if 'app' in json_obj else ''
