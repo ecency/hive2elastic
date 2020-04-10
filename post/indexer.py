@@ -31,13 +31,16 @@ def convert_post(row):
 def run():
     global conf, es, index_name, bulk_errors
 
+    track_table = conf['db_track_table']
+
     try:
         db_engine = create_engine(conf['db_url'])
-        db_engine.execute("SELECT post_id FROM __h2e_posts LIMIT 1")
+        sql = 'SELECT post_id FROM {} LIMIT 1'.format(track_table)
+        db_engine.execute(sql)
     except OperationalError:
         raise Exception("Could not connected: {}".format(conf['db_url']))
     except ProgrammingError:
-        raise Exception("__h2e_posts table not exists in database")
+        raise Exception("{} table not exists in database".format(track_table))
 
     es = elasticsearch.Elasticsearch(conf['es_url'])
 
@@ -64,8 +67,8 @@ def run():
                  created_at, payout_at, updated_at, is_paidout, is_nsfw, is_declined,
                  is_full_power, is_hidden, is_grayed, rshares, sc_hot, sc_trend, sc_hot,
                  body, votes,  json FROM hive_posts_cache 
-                 WHERE post_id IN (SELECT post_id FROM __h2e_posts ORDER BY post_id ASC LIMIT :limit)
-                '''
+                 WHERE post_id IN (SELECT post_id FROM {} ORDER BY post_id ASC LIMIT :limit)
+                '''.format(track_table)
 
         posts = db_engine.execute(text(sql), limit=conf['bulk_size']).fetchall()
         db_engine.dispose()
@@ -96,7 +99,7 @@ def run():
         chunked_id_list = list(chunks(post_ids, 200))
 
         for chunk in chunked_id_list:
-            sql = "DELETE FROM __h2e_posts WHERE post_id IN :ids"
+            sql = "DELETE FROM {} WHERE post_id IN :ids".format(track_table)
             db_engine.execute(text(sql), ids=tuple(chunk))
 
         end = time.time()
@@ -107,6 +110,7 @@ def main():
     parser = configargparse.get_arg_parser()
 
     parser.add('--db-url', env_var='DB_URL', required=True, help='hive database connection url')
+    parser.add('--db-track-table', env_var='DB_TRACK_TABLE', required=True, help='db table to track updates', default='__h2e_posts')
     parser.add('--es-url', env_var='ES_URL', required=True, help='elasticsearch connection url')
     parser.add('--es-index', env_var='ES_INDEX', help='elasticsearch index name', default='hive_posts')
     parser.add('--es-type', env_var='ES_TYPE', help='elasticsearch type name', default='posts')

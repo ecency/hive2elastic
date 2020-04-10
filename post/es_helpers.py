@@ -42,7 +42,7 @@ def make_index_config(type_name):
                     },
                     'category': {
                         'type': 'text',
-                        'index': 'false'
+                        'analyzer': 'whitespace'
                     },
                     'depth': {
                         'type': 'short'
