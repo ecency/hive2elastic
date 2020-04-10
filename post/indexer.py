@@ -110,7 +110,7 @@ def main():
     parser = configargparse.get_arg_parser()
 
     parser.add('--db-url', env_var='DB_URL', required=True, help='hive database connection url')
-    parser.add('--db-track-table', env_var='DB_TRACK_TABLE', required=True, help='db table to track updates', default='__h2e_posts')
+    parser.add('--db-track-table', env_var='DB_TRACK_TABLE', help='db table to track updates', default='__h2e_posts')
     parser.add('--es-url', env_var='ES_URL', required=True, help='elasticsearch connection url')
     parser.add('--es-index', env_var='ES_INDEX', help='elasticsearch index name', default='hive_posts')
     parser.add('--es-type', env_var='ES_TYPE', help='elasticsearch type name', default='posts')
