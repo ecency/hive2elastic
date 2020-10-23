@@ -251,6 +251,7 @@ def doc_from_row(row, index_name, index_type):
     flag_weight = calc_flag_weight(row['rshares'], row['abs_rshares'])
     tags = parse_tags(json_obj['tags']) if 'tags' in json_obj else ''
     app = parse_app(json_obj['app']) if 'app' in json_obj else ''
+    payout = row.payout if row.payout != "0.000" else row.pending_payout
 
     try:
         sanitized_body = sanitize_post_body(row.body)
@@ -275,7 +276,7 @@ def doc_from_row(row, index_name, index_type):
         'up_votes': row.up_votes,
         'title': row.title,
         'img_url': row.img_url,
-        'payout': row.payout,
+        'payout': payout,
         'promoted': row.promoted,
         'created_at': row.created_at,
         'payout_at': row.payout_at,

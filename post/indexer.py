@@ -86,6 +86,7 @@ def run():
               hpd.title,
               hpd.img_url,
               hp.payout,
+              hp.pending_payout,
               hp.promoted,
               hp.created_at,
               hp.payout_at,
