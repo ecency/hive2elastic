@@ -244,7 +244,7 @@ def parse_tags(tags):
 def doc_from_row(row, index_name, index_type):
     try:
         json_obj = json.loads(row.json)
-    except TypeError:
+    except (TypeError, json.JSONDecodeError):
         json_obj = {}
 
     author_rep = "{:.2f}".format(reputation_to_score(row.author_rep))

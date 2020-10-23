@@ -8,7 +8,7 @@ assert sys.version_info[0] == 3 and sys.version_info[1] >= 5, "hive2elastic requ
 
 setup(
     name='hive2elastic',
-    version='0.0.2',
+    version='0.0.3',
     description='hive to elastic exporter',
     long_description=open('README.md').read(),
     packages=find_packages(),
