@@ -1,7 +1,10 @@
 import json
 import re
+
 import markdown2
 import timeout_decorator
+
+from .helper import reputation_to_score, calc_flag_weight
 
 
 def make_index_config(type_name):
@@ -244,6 +247,8 @@ def doc_from_row(row, index_name, index_type):
     except TypeError:
         json_obj = {}
 
+    author_rep = "{:.2f}".format(reputation_to_score(row.author_rep))
+    flag_weight = calc_flag_weight(row['rshares'], row['abs_rshares'])
     tags = parse_tags(json_obj['tags']) if 'tags' in json_obj else ''
     app = parse_app(json_obj['app']) if 'app' in json_obj else ''
 
@@ -264,8 +269,8 @@ def doc_from_row(row, index_name, index_type):
         'category': row.category,
         'depth': row.depth,
         'children': row.children,
-        'author_rep': row.author_rep,
-        'flag_weight': row.flag_weight,
+        'author_rep': author_rep,
+        'flag_weight': flag_weight,
         'total_votes': row.total_votes,
         'up_votes': row.up_votes,
         'title': row.title,

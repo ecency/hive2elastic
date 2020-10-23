@@ -1,6 +1,6 @@
 # hive2elastic
 
-hive2elastic synchronises [hive](https://github.com/steemit/hivemind)'s hive_posts_cache table to a elasticsearch index and keeps it updated.
+hive2elastic synchronises [hivemind](https://gitlab.syncad.com/hive/hivemind)'s posts & comments to a elasticsearch index and keeps it updated.
 
 
 ## Before start
@@ -21,7 +21,7 @@ CREATE TABLE __h2e_posts
 ```
 
 ```
-INSERT INTO __h2e_posts (post_id) SELECT post_id FROM hive_posts_cache;
+INSERT INTO __h2e_posts (post_id) SELECT id FROM hive_posts;
 ```
 
 ```
@@ -29,8 +29,8 @@ CREATE OR REPLACE FUNCTION __fn_h2e_posts()
   RETURNS TRIGGER AS
 $func$
 BEGIN   
-    IF NOT EXISTS (SELECT post_id FROM __h2e_posts WHERE post_id = NEW.post_id) THEN
-    	INSERT INTO __h2e_posts (post_id) VALUES (NEW.post_id);
+    IF NOT EXISTS (SELECT post_id FROM __h2e_posts WHERE post_id = NEW.id) THEN
+    	INSERT INTO __h2e_posts (post_id) VALUES (NEW.id);
 	END IF;
 	RETURN NEW;
 END
@@ -39,7 +39,7 @@ $func$ LANGUAGE plpgsql;
 
 ```
 CREATE TRIGGER __trg_h2e_posts
-AFTER INSERT OR UPDATE ON hive_posts_cache
+AFTER INSERT OR UPDATE ON hive_posts
 FOR EACH ROW EXECUTE PROCEDURE __fn_h2e_posts();
 ```
 
