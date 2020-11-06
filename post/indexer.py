@@ -97,19 +97,8 @@ def run():
               hp.is_full_power,
               hp.is_hidden,
               ha_a.is_grayed,
-              COALESCE((SELECT sum(v.rshares) AS sum
-                        FROM hive_votes v
-                        WHERE (v.post_id = hp.id)
-                        GROUP BY v.post_id), (0) :: NUMERIC) AS rshares,
-              COALESCE((SELECT sum(
-                                   CASE (v.rshares >= 0)
-                                   WHEN TRUE
-                                     THEN v.rshares
-                                   ELSE (-v.rshares)
-                                   END) AS sum
-                        FROM hive_votes v
-                        WHERE ((v.post_id = hp.id) AND (NOT (v.rshares = 0)))
-                        GROUP BY v.post_id), (0) :: NUMERIC) AS abs_rshares,
+              hp.vote_rshares AS rshares,
+              hp.abs_rshares,
               hp.sc_hot,
               hp.sc_trend,
               hpd.body,
