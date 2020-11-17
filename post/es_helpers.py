@@ -249,8 +249,8 @@ def doc_from_row(row, index_name, index_type):
 
     author_rep = "{:.2f}".format(reputation_to_score(row.author_rep))
     flag_weight = calc_flag_weight(row['rshares'], row['abs_rshares'])
-    tags = parse_tags(json_obj['tags']) if 'tags' in json_obj else ''
-    app = parse_app(json_obj['app']) if 'app' in json_obj else ''
+    tags = parse_tags(json_obj['tags']) if isinstance(json_obj, dict) and 'tags' in json_obj else ''
+    app = parse_app(json_obj['app']) if isinstance(json_obj, dict) and 'app' in json_obj else ''
     payout = row.pending_payout if row.payout == 0.000 else row.payout
 
     try:
