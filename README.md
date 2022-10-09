@@ -60,6 +60,12 @@ $ cd hive2elastic
 $ pip3 install -e .
 ```
 
+### Alternative
+```
+$ python3 setup.py build
+$ python3 setup.py install
+```
+
 ## Configuration
 
 You can configure hive2elastic by these arguments/environment variables:
