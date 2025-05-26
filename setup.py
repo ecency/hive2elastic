@@ -8,17 +8,17 @@ assert sys.version_info[0] == 3 and sys.version_info[1] >= 5, "hive2elastic requ
 
 setup(
     name='hive2elastic',
-    version='0.0.5',
+    version='0.0.6',
     description='hive to elastic exporter',
     long_description=open('README.md').read(),
     packages=find_packages(),
     install_requires=[
-        'configargparse',
-        'elasticsearch',
-        'sqlalchemy',
-        'psycopg2-binary',
-        'markdown2',
-        'timeout_decorator'
+        'configargparse==1.4.1',
+        'elasticsearch==7.15.1',
+        'sqlalchemy==1.4.15',
+        'psycopg2-binary==2.8.6',
+        'markdown2==2.4.1',
+        'timeout_decorator==0.5.0'
     ],
     entry_points={
         'console_scripts': [

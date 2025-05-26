@@ -60,6 +60,12 @@ $ cd hive2elastic
 $ pip3 install -e .
 ```
 
+### Alternative
+```
+$ python3 setup.py build
+$ python3 setup.py install
+```
+
 ## Configuration
 
 You can configure hive2elastic by these arguments/environment variables:
@@ -78,10 +84,10 @@ You can configure hive2elastic by these arguments/environment variables:
 ## Example configuration and running
 
 ```
-$ export DB_URL=postgresql://username:passwd@localhost:5432/hive 
-$ export ES_URL=http://localhost:9200/
-$ export BULK_SIZE=2000                 
-$ export MAX_WORKERS=4
+export DB_URL=postgresql://username:passwd@localhost:5432/hive 
+export ES_URL=http://localhost:9200/
+export BULK_SIZE=2000                 
+export MAX_WORKERS=4
 
-$ hive2elastic_post
+hive2elastic_post
 ```
