@@ -63,53 +63,38 @@ def run():
         start = time.time()
 
         sql = '''SELECT 
-              hp.id AS post_id,
-              ha_a.name AS author,
-              hpd_p.permlink,
-              hcd.category,
-              hp.depth,
-              hp.children,
-              ha_a.reputation AS author_rep,
-              COALESCE((SELECT count(1) AS count
-                        FROM hive_votes v
-                        WHERE ((v.post_id = hp.id) AND v.is_effective)
-                        GROUP BY v.post_id), (0) :: BIGINT)  AS total_votes,
-              COALESCE((SELECT sum(
-                                   CASE (v.rshares > 0)
-                                   WHEN TRUE
-                                     THEN 1
-                                   ELSE '-1' :: INTEGER
-                                   END) AS sum
-                        FROM hive_votes v
-                        WHERE ((v.post_id = hp.id) AND (NOT (v.rshares = 0)))
-                        GROUP BY v.post_id), (0) :: BIGINT)  AS up_votes,
-              hpd.title,
-              hpd.img_url,
-              hp.payout,
-              hp.pending_payout,
-              hp.promoted,
-              hp.created_at,
-              hp.payout_at,
-              hp.updated_at,
-              hp.is_paidout,
-              hp.is_nsfw,
-              hp.is_declined,
-              hp.is_full_power,
-              hp.is_hidden,
-              ha_a.is_grayed,
-              hp.vote_rshares AS rshares,
-              hp.abs_rshares,
-              hp.sc_hot,
-              hp.sc_trend,
-              hpd.body,
+              post_id,
+              author,
+              permlink,
+              category,
+              depth,
+              children,
+              author_rep,
+              total_votes,
+              up_votes,
+              title,
+              img_url,
+              payout,
+              pending_payout,
+              promoted,
+              created_at,
+              payout_at,
+              updated_at,
+              is_paidout,
+              is_nsfw,
+              is_declined,
+              is_full_power,
+              is_hidden,
+              is_grayed,
+              rshares,
+              abs_rshares,
+              sc_hot,
+              sc_trend,
+              body,
               0 AS votes,
-              hpd.json
-              FROM hive_posts hp
-              JOIN hive_accounts_view ha_a ON ha_a.id = hp.author_id
-              JOIN hive_permlink_data hpd_p ON hpd_p.id = hp.permlink_id
-              JOIN hive_category_data hcd ON hcd.id = hp.category_id
-              JOIN hive_post_data hpd ON hpd.id = hp.id
-              WHERE hp.id IN (SELECT post_id FROM {} ORDER BY post_id ASC LIMIT :limit)'''.format(track_table)
+              json
+              FROM hive_posts_raw 
+              WHERE post_id IN (SELECT post_id FROM {} ORDER BY post_id ASC LIMIT :limit)'''.format(track_table)
 
         posts = db_engine.execute(text(sql), limit=conf['bulk_size']).fetchall()
         db_engine.dispose()
