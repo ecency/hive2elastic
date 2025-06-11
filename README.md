@@ -5,11 +5,11 @@ hive2elastic synchronises [hivemind](https://gitlab.syncad.com/hive/hivemind)'s 
 
 ## Before start
 
-Some additional database objects have to be created on hive's database.
+Some additional database objects have to be created on hive's database, works with https://github.com/ecency/h2e.
 
 **Follow steps below:**
 
-1- Stop hive. Make sure all hive processes stopped.
+1- Make sure h2e is setup and syncing data, db is used here in db_url configs.
 
 2- Create database objects on hive's database.
 
@@ -21,7 +21,7 @@ CREATE TABLE __h2e_posts
 ```
 
 ```
-INSERT INTO __h2e_posts (post_id) SELECT id FROM hive_posts;
+INSERT INTO __h2e_posts (post_id) SELECT post_id FROM hive_posts_raw WHERE post_id > 146810178;
 ```
 
 ```
@@ -29,8 +29,8 @@ CREATE OR REPLACE FUNCTION __fn_h2e_posts()
   RETURNS TRIGGER AS
 $func$
 BEGIN   
-    IF NOT EXISTS (SELECT post_id FROM __h2e_posts WHERE post_id = NEW.id) THEN
-    	INSERT INTO __h2e_posts (post_id) VALUES (NEW.id);
+    IF NOT EXISTS (SELECT post_id FROM __h2e_posts WHERE post_id = NEW.post_id) THEN
+    	INSERT INTO __h2e_posts (post_id) VALUES (NEW.post_id);
 	END IF;
 	RETURN NEW;
 END
@@ -39,7 +39,7 @@ $func$ LANGUAGE plpgsql;
 
 ```
 CREATE TRIGGER __trg_h2e_posts
-AFTER INSERT OR UPDATE ON hive_posts
+AFTER INSERT OR UPDATE ON hive_posts_raw
 FOR EACH ROW EXECUTE PROCEDURE __fn_h2e_posts();
 ```
 
@@ -54,8 +54,10 @@ You can find detailed installation instructions [here](https://www.elastic.co/gu
 
 ## Installation
 
+Python 3.11 is required 
+
 ```
-$ git clone https://github.com/esteemapp/hive2elastic
+$ git clone https://github.com/ecency/hive2elastic
 $ cd hive2elastic
 $ pip3 install -e .
 ```

@@ -3,14 +3,19 @@ import math
 
 def reputation_to_score(rep):
     """
-    Copied from beem
-    Converts the account reputation value into the reputation score
+    Converts the raw reputation value into the reputation score.
+    If the input is already a 2-digit score, it returns it directly.
     """
     if isinstance(rep, str):
         rep = int(rep)
 
+    # If rep is already in 2-digit format, return it as a float
+    if 10 <= rep < 100:
+        return float(rep)
+
     if rep == 0:
         return 25.0
+
     score = max([math.log10(abs(rep)) - 9, 0])
     if rep < 0:
         score *= -1
