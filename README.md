@@ -1,7 +1,8 @@
 # hive2elastic
 
-hive2elastic synchronises [hivemind](https://gitlab.syncad.com/hive/hivemind)'s posts & comments to an elasticsearch index and keeps it updated.
+hive2elastic synchronises Hive posts & comments to an elasticsearch index and keeps it updated.
 
+Check https://github.com/ecency/h2e new indexer for further info.
 
 ## Before start
 
