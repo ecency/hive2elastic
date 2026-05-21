@@ -242,9 +242,21 @@ def parse_tags(tags):
 
 
 def doc_from_row(row, index_name, index_type):
-    try:
-        json_obj = json.loads(row.json)
-    except (TypeError, json.JSONDecodeError):
+    # `row.json` is whatever the DB driver hands back for the `json` column.
+    # When the column is `jsonb`, psycopg2/SQLAlchemy already returns a
+    # Python dict — feeding that to `json.loads` raises TypeError, which the
+    # original broad `except` silently swallowed and left `json_obj = {}` —
+    # wiping `tags` and `app` on every indexed document. Accept both dict
+    # (jsonb) and str/bytes (legacy text) shapes.
+    raw_json = row.json
+    if isinstance(raw_json, dict):
+        json_obj = raw_json
+    elif isinstance(raw_json, (str, bytes, bytearray)):
+        try:
+            json_obj = json.loads(raw_json)
+        except (TypeError, json.JSONDecodeError):
+            json_obj = {}
+    else:
         json_obj = {}
 
     author_rep = "{:.2f}".format(reputation_to_score(row.author_rep))
@@ -263,7 +275,15 @@ def doc_from_row(row, index_name, index_type):
     return {
         '_index': index_name,
         '_type': index_type,
-        '_id': row.post_id,
+        # `_id` is the canonical (author, permlink). Earlier versions used
+        # row.post_id, but hivemind's post_id is a per-database sequence
+        # number — different nodes (api.hive.blog vs. openhive) assign
+        # different ints to the same post, and the same int can refer to
+        # different posts on different nodes. Using author/permlink as the
+        # ES doc id makes it stable across nodes/reindexes and trivially
+        # human-resolvable. Author + '/' + permlink stays under ES's 512-byte
+        # _id limit (account ≤16 chars, permlink ≤256 chars by Hive spec).
+        '_id': '{}/{}'.format(row.author, row.permlink),
         'post_id': row.post_id,
         'author': row.author,
         'permlink': row.permlink,

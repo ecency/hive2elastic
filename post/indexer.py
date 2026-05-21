@@ -35,7 +35,7 @@ def run():
 
     try:
         db_engine = create_engine(conf['db_url'])
-        sql = 'SELECT post_id FROM {} LIMIT 1'.format(track_table)
+        sql = 'SELECT author, permlink FROM {} LIMIT 1'.format(track_table)
         db_engine.execute(sql)
     except OperationalError:
         raise Exception("Could not connected: {}".format(conf['db_url']))
@@ -62,7 +62,38 @@ def run():
     while True:
         start = time.time()
 
-        sql = '''SELECT 
+        # Two-step pull: first claim the keys we'll work on, then fetch the
+        # rows. Lets us DELETE-what-we-selected unconditionally below, so
+        # queue entries that no longer have a matching hive_posts_raw row
+        # (stale post_id from an older schema, manual cleanup, etc.) can't
+        # head-block the queue. The old code did SELECT-with-JOIN and only
+        # DELETEd if `len(posts) > 0`, which left orphans cycling forever.
+        select_keys_sql = (
+            'SELECT author, permlink FROM {} '
+            'ORDER BY author, permlink LIMIT :limit'
+        ).format(track_table)
+        key_rows = db_engine.execute(
+            text(select_keys_sql), limit=conf['bulk_size']
+        ).fetchall()
+
+        if len(key_rows) == 0:
+            time.sleep(0.5)
+            continue
+
+        keys = [(r.author, r.permlink) for r in key_rows]
+
+        # Resolve to full rows. Composite-key matching via row constructor
+        # `(author, permlink) IN ((:a1, :p1), ...)`. SQLAlchemy's
+        # `expanding`-style parameter for tuples needs a manually-built
+        # placeholder list because tuple-element binds aren't first-class.
+        placeholders = ', '.join(
+            '(:a{i}, :p{i})'.format(i=i) for i in range(len(keys))
+        )
+        params = {}
+        for i, (a, p) in enumerate(keys):
+            params['a{}'.format(i)] = a
+            params['p{}'.format(i)] = p
+        fetch_sql = '''SELECT
               post_id,
               author,
               permlink,
@@ -93,43 +124,50 @@ def run():
               body,
               0 AS votes,
               json
-              FROM hive_posts_raw 
-              WHERE post_id IN (SELECT post_id FROM {} ORDER BY post_id ASC LIMIT :limit)'''.format(track_table)
-
-        posts = db_engine.execute(text(sql), limit=conf['bulk_size']).fetchall()
+              FROM hive_posts_raw
+              WHERE (author, permlink) IN ({})'''.format(placeholders)
+        posts = db_engine.execute(text(fetch_sql), **params).fetchall()
         db_engine.dispose()
 
-        if len(posts) == 0:
-            time.sleep(0.5)
-            continue
+        if len(posts) > 0:
+            pool = mp.Pool(processes=conf['max_workers'])
+            index_data = pool.map_async(convert_post, posts).get()
+            pool.close()
+            pool.join()
 
-        pool = mp.Pool(processes=conf['max_workers'])
-        index_data = pool.map_async(convert_post, posts).get()
-        pool.close()
-        pool.join()
+            try:
+                helpers.bulk(es, index_data)
+                bulk_errors = 0
+            except helpers.BulkIndexError as ex:
+                bulk_errors += 1
+                logger.error("BulkIndexError occurred. {}".format(ex))
 
-        try:
-            helpers.bulk(es, index_data)
-            bulk_errors = 0
-        except helpers.BulkIndexError as ex:
-            bulk_errors += 1
-            logger.error("BulkIndexError occurred. {}".format(ex))
+                if bulk_errors >= conf['max_bulk_errors']:
+                    sys.exit(1)
 
-            if bulk_errors >= conf['max_bulk_errors']:
-                sys.exit(1)
+                time.sleep(1)
+                continue
 
-            time.sleep(1)
-            continue
-
-        post_ids = [x.post_id for x in posts]
-        chunked_id_list = list(chunks(post_ids, 200))
-
-        for chunk in chunked_id_list:
-            sql = "DELETE FROM {} WHERE post_id IN :ids".format(track_table)
-            db_engine.execute(text(sql), ids=tuple(chunk))
+        # Delete the keys we *selected*, not the keys we *processed*. This
+        # is what keeps stale queue entries from head-blocking forever.
+        chunked_keys = list(chunks(keys, 200))
+        for chunk in chunked_keys:
+            del_placeholders = ', '.join(
+                '(:a{i}, :p{i})'.format(i=i) for i in range(len(chunk))
+            )
+            del_params = {}
+            for i, (a, p) in enumerate(chunk):
+                del_params['a{}'.format(i)] = a
+                del_params['p{}'.format(i)] = p
+            del_sql = 'DELETE FROM {} WHERE (author, permlink) IN ({})'.format(
+                track_table, del_placeholders
+            )
+            db_engine.execute(text(del_sql), **del_params)
 
         end = time.time()
-        logger.info('{} indexed in {}'.format(len(posts), (end - start)))
+        logger.info('{} selected / {} indexed in {}'.format(
+            len(keys), len(posts), (end - start)
+        ))
 
 
 def main():
