@@ -1,6 +1,6 @@
-# hive2elastic
+# hivesearcher-elastic
 
-hive2elastic synchronises Hive posts & comments to an elasticsearch index and keeps it updated.
+hivesearcher-elastic (formerly hive2elastic) synchronises Hive posts & comments to an elasticsearch index and keeps it updated.
 
 Check https://github.com/ecency/hivesearcher-indexer new indexer for further info.
 
