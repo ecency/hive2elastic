@@ -2,15 +2,15 @@
 
 hive2elastic synchronises Hive posts & comments to an elasticsearch index and keeps it updated.
 
-Check https://github.com/ecency/h2e new indexer for further info.
+Check https://github.com/ecency/hivesearcher-indexer new indexer for further info.
 
 ## Before start
 
-Some additional database objects have to be created on hive's database, works with https://github.com/ecency/h2e.
+Some additional database objects have to be created on hive's database, works with https://github.com/ecency/hivesearcher-indexer.
 
 **Follow steps below:**
 
-1- Make sure h2e is setup and syncing data, db is used here in db_url configs.
+1- Make sure hivesearcher-indexer is setup and syncing data, db is used here in db_url configs.
 
 2- Create database objects on hive's database.
 
